@@ -1,12 +1,9 @@
 import order.*;
 
-import java.math.BigDecimal;
 import java.util.*;
 
-import static java.math.BigDecimal.ZERO;
-
 public class Restaurant {
-    private static LinkedHashMap<OrderPosition, Integer> order = new LinkedHashMap<>();
+    private static Order order = new Order();
     private static Menu menu = new Menu();
     private static Scanner scanner = new Scanner(System.in);
 
@@ -65,18 +62,10 @@ public class Restaurant {
     }
 
     private static int getCuisine() {
-        int clientChoice;
-        List<Drink> drinks = menu.getDrinks();
-        do {
-            System.out.println("Please choose one of our cuisines:");
-            listAllCuisines(menu.getCuisines());
-            clientChoice = drinks.size();
-            if (scanner.hasNextInt())
-                clientChoice = scanner.nextInt();
-            else
-                scanner.next();
-        } while (clientChoice > drinks.size() - 1 || clientChoice <= 0);
-        return clientChoice;
+        List<Cuisine> cuisines = menu.getCuisines();
+        System.out.println("Please choose one of our cuisines:");
+        listAllCuisines(cuisines);
+        return getClientChoice(cuisines.size());
     }
 
     private static void listAllCuisines(List<Cuisine> list) {
@@ -90,34 +79,21 @@ public class Restaurant {
     }
 
     private static void getMainCourse(int cuisineNumber) {
-        int clientChoice;
         Cuisine cuisine = menu.getCuisine(cuisineNumber);
         List<MainCourse> mainCourses = cuisine.getMainCourses();
-        do {
-            System.out.println("Please choose one of our main courses:");
-            cuisine.listMainCourses();
-            clientChoice = mainCourses.size() + 1;
-            if (scanner.hasNextInt())
-                clientChoice = scanner.nextInt();
-            else
-                scanner.next();
-        } while (clientChoice > mainCourses.size() || clientChoice <= 0);
-        addToOrder(cuisine.getCourse(clientChoice-1));
+        System.out.println("Please choose one of our main courses:");
+        cuisine.printMainCourses();
+        int clientChoice = getClientChoice(mainCourses.size());
+        order.add(cuisine.getCourse(clientChoice - 1));
     }
 
     private static void getDessert() {
         int clientChoice;
         List<Dessert> desserts = menu.getDesserts();
-        do {
-            System.out.println("Please choose one of our desserts:");
-            listAll(menu.getDesserts());
-            clientChoice = desserts.size() + 1;
-            if (scanner.hasNextInt())
-                clientChoice = scanner.nextInt();
-            else
-                scanner.next();
-        } while (clientChoice > desserts.size() || clientChoice <= 0);
-        addToOrder(menu.getDessert(clientChoice-1));
+        System.out.println("Please choose one of our desserts:");
+        listAll(desserts);
+        clientChoice = getClientChoice(desserts.size());
+        order.add(menu.getDessert(clientChoice - 1));
     }
 
     private static void handleDrinkOrder() {
@@ -127,60 +103,55 @@ public class Restaurant {
     }
 
     private static void getDrink() {
-        int clientChoice;
+        int clientChoice = -1;
         List<Drink> drinks = menu.getDrinks();
-        do {
-            System.out.println("Please choose one of our drinks:");
-            listAll(drinks);
-            clientChoice = drinks.size() + 1;
-            if (scanner.hasNextInt())
-                clientChoice = scanner.nextInt();
-            else
-                scanner.next();
-        } while (clientChoice > drinks.size()  || clientChoice <= 0);
-        addToOrder(menu.getDrink(clientChoice-1));
+        System.out.println("Please choose one of our drinks:");
+        listAll(drinks);
+        clientChoice = getClientChoice(drinks.size());
+        order.add(menu.getDrink(clientChoice - 1));
     }
 
-    private static void addToOrder(OrderPosition clientChoice) {
-        Integer numberOfOccurrence = order.getOrDefault(clientChoice, 0);
-        order.put(clientChoice, numberOfOccurrence + 1);
+    private static int getClientChoice(int listSize) {
+        int clientChoice = getNextLine();
+        while (clientChoice > listSize || clientChoice <= 0) {
+            System.out.println("There is no such position in our menu. Please choose again.");
+            clientChoice = getNextLine();
+        }
+        return clientChoice;
+    }
+
+    private static int getNextLine() {
+        if (scanner.hasNextInt())
+            return scanner.nextInt();
+        else
+            scanner.next();
+        return -1;
     }
 
     private static void handleIce() {
-        String clientChoice;
-        do {
-            System.out.println("Would you like to have some ice in your drink?");
-            System.out.println("Y - if yes; N - if no");
-            clientChoice = scanner.next();
-            if ("N".equals(clientChoice))
-                return;
-            if ("Y".equals(clientChoice))
-                addToOrder(new Ice());
-        } while (!"Y".equals(clientChoice) && !"N".equals(clientChoice));
+        System.out.println("Would you like to have some ice in your drink?");
+        if (clientDecidesYes())
+            order.add(new Ice());
     }
 
     private static void handleLemon() {
-        String clientChoice;
-        do {
-            System.out.println("Would you like to have some lemon in your drink?");
+        System.out.println("Would you like to have some lemon in your drink?");
+        if (clientDecidesYes())
+            order.add(new Lemon());
+    }
+
+    private static boolean clientDecidesYes() {
+        String clientChoice = "";
+        while (!"Y".equals(clientChoice) && !"N".equals(clientChoice)) {
             System.out.println("Y - if yes; N - if no");
             clientChoice = scanner.next();
-            if ("N".equals(clientChoice))
-                return;
-            if ("Y".equals(clientChoice))
-                addToOrder(new Lemon());
-        } while (!"Y".equals(clientChoice) && !"N".equals(clientChoice));
+        }
+        return "Y".equals(clientChoice);
     }
 
     private static void provideBill() {
-        BigDecimal sum = ZERO;
         System.out.println("You ordered:");
-        for (Map.Entry<OrderPosition, Integer> entry : order.entrySet()) {
-            OrderPosition orderPosition = entry.getKey();
-            Integer amount = entry.getValue();
-            System.out.println(amount + "x " + orderPosition.getName() + ": " + (orderPosition.getPrice().multiply(new BigDecimal(amount))));
-            sum = sum.add(orderPosition.getPrice().multiply(new BigDecimal(amount)));
-        }
-        System.out.println("Which total cost is: " + sum);
+        System.out.println(order);
+        System.out.println("Which total cost is: " + order.charge());
     }
 }

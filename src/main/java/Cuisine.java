@@ -37,7 +37,7 @@ public class Cuisine {
         return name;
     }
 
-    public void listMainCourses() {
+    public void printMainCourses() {
         for (int i = 0; i < mainCourses.size(); i++)
             System.out.println((i+1) + " - " + mainCourses.get(i).getName());
     }
@@ -45,4 +45,5 @@ public class Cuisine {
     public OrderPosition getCourse(int id) {
         return mainCourses.get(id);
     }
+
 }
